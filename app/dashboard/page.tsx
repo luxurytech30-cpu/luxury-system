@@ -176,7 +176,7 @@ export default function DashboardPage() {
             </Card>
 
             <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-              <Card className="bg-gradient-to-b from-white to-slate-50/70">
+              <Card className="bg-linear-to-brom-white to-slate-50/70">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h2 className="text-lg font-semibold">Profit Trend</h2>
@@ -220,7 +220,7 @@ export default function DashboardPage() {
               </Card>
 
               <div className="space-y-4">
-                <Card className="bg-gradient-to-br from-white via-white to-amber-50/70">
+                <Card className="bg-linear-to-br from-white via-white to-amber-50/70">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="text-lg font-semibold">Overdue Snapshot</h2>
                     <span className="rounded-full border border-amber-200 bg-amber-100/80 px-2.5 py-1 text-xs font-medium text-amber-700">
@@ -239,14 +239,14 @@ export default function DashboardPage() {
                   </div>
                 </Card>
 
-                <Card className="bg-gradient-to-b from-white to-slate-50/60">
+                <Card className="bg-linear-to-b from-white to-slate-50/60">
                   <div className="mb-3 flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Overdue Bills</h2>
                     <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
                       {data?.overdue.length || 0} items
                     </span>
                   </div>
-                  <div className="max-h-[26rem] overflow-auto rounded-2xl border border-slate-200/80 bg-white/80">
+                  <div className="max-h-104 overflow-auto rounded-2xl border border-slate-200/80 bg-white/80">
                     <table className="min-w-full text-sm">
                       <thead className="sticky top-0 bg-white/95 text-left text-slate-500 backdrop-blur">
                         <tr>
@@ -334,7 +334,7 @@ const toneStyles: Record<Tone, { halo: string; chip: string; value: string }> = 
 function StatCard({ label, value, tone = "slate" }: { label: string; value: string; tone?: Tone }) {
   const style = toneStyles[tone];
   return (
-    <Card className={`bg-gradient-to-br ${style.halo}`}>
+    <Card className={`bg-linear-to-br ${style.halo}`}>
       <div className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${style.chip}`}>
         {label}
       </div>
@@ -359,7 +359,7 @@ function MiniStat({
 }) {
   const style = toneStyles[tone];
   return (
-    <div className={`rounded-2xl border bg-gradient-to-br p-3 shadow-sm ring-1 ring-inset ${style.halo} ${negative ? "border-rose-200 ring-rose-100" : "border-slate-200 ring-slate-100"}`}>
+    <div className={`rounded-2xl border bg-linear-to-br p-3 shadow-sm ring-1 ring-inset ${style.halo} ${negative ? "border-rose-200 ring-rose-100" : "border-slate-200 ring-slate-100"}`}>
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-1 text-lg font-semibold ${negative ? "text-rose-700" : style.value}`}>{value}</div>
     </div>
