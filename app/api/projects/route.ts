@@ -1,6 +1,6 @@
 import { dbConnect } from "@/lib/db";
 import { withAdmin, ok, fail, parseJson } from "@/lib/http";
-import { Project } from "@/models/Project";
+import { Project, type ProjectStatus } from "@/models/Project";
 import { Client } from "@/models/Client";
 import { ensureProjectMonthsUpToCurrent } from "@/lib/billing";
 import { toPlain } from "@/lib/serialize";
@@ -9,8 +9,11 @@ export const GET = withAdmin(async (req) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
-  const filter: { status?: "active" | "paused" | "completed" } = {};
-  if (status && ["active", "paused", "completed"].includes(status)) filter.status = status;
+  const isProjectStatus = (value: string): value is ProjectStatus =>
+    value === "active" || value === "paused" || value === "completed";
+
+  const filter: { status?: ProjectStatus } = {};
+  if (status && isProjectStatus(status)) filter.status = status;
 
   const projects = await Project.find(filter)
     .sort({ createdAt: -1 })
