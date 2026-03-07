@@ -5,7 +5,7 @@ import { Payment } from "@/models/Payment";
 import { Expense } from "@/models/Expense";
 import { ProjectMonth } from "@/models/ProjectMonth";
 import { Client } from "@/models/Client";
-import { shouldBillProjectThisMonth } from "@/lib/billing";
+import { autoCompleteProjectsByBillingEndDate, shouldBillProjectThisMonth } from "@/lib/billing";
 import { isMonthOverdue, monthLabel } from "@/lib/date";
 import { ensureRecurringExpensesUpToCurrent } from "@/lib/recurringExpenses";
 import { toPlain } from "@/lib/serialize";
@@ -30,6 +30,7 @@ function parseYearMonthInput(value: string | null) {
 
 export const GET = withAdmin(async (req) => {
   await dbConnect();
+  await autoCompleteProjectsByBillingEndDate();
   await ensureRecurringExpensesUpToCurrent();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);

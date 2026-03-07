@@ -67,7 +67,7 @@ export const PUT = withAdmin(async (req, context) => {
     if (!hasExplicitPausePeriods) {
       const lastPause = projectDoc.pausePeriods[projectDoc.pausePeriods.length - 1];
 
-      if (nextStatus === "paused") {
+      if (nextStatus === "paused" || nextStatus === "completed") {
         if (!lastPause || lastPause.to) {
           projectDoc.pausePeriods.push({ from: new Date(), to: null } as (typeof projectDoc.pausePeriods)[number]);
         }
@@ -85,10 +85,9 @@ export const PUT = withAdmin(async (req, context) => {
 
   await projectDoc.save();
 
+  await ensureProjectMonthsUpToCurrent(id);
   const project = await Project.findById(id).populate("clientId", "name").lean();
   if (!project) return fail("Project not found", 404);
-
-  await ensureProjectMonthsUpToCurrent(id);
   return ok(toPlain(project));
 });
 

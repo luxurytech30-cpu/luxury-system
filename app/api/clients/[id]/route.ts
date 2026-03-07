@@ -3,10 +3,12 @@ import { dbConnect } from "@/lib/db";
 import { withAdmin, ok, fail, parseJson, getParams } from "@/lib/http";
 import { Client } from "@/models/Client";
 import { Project } from "@/models/Project";
+import { autoCompleteProjectsByBillingEndDate } from "@/lib/billing";
 import { toPlain } from "@/lib/serialize";
 
 export const GET = withAdmin(async (_req, context) => {
   await dbConnect();
+  await autoCompleteProjectsByBillingEndDate();
   const { id } = await getParams(context);
   if (!mongoose.isValidObjectId(id)) return fail("Invalid id");
 
@@ -54,4 +56,3 @@ export const DELETE = withAdmin(async (_req, context) => {
   if (!deleted) return fail("Client not found", 404);
   return ok({ deleted: true });
 });
-

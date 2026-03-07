@@ -19,6 +19,7 @@ export const POST = withAdmin(async (_req, context) => {
   await project.save();
 
   await ensureProjectMonthsUpToCurrent(id);
-  return ok(toPlain(project));
+  const refreshed = await Project.findById(id).lean();
+  if (!refreshed) return fail("Project not found", 404);
+  return ok(toPlain(refreshed));
 });
-

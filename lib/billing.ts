@@ -22,10 +22,77 @@ function shouldSkipMonthForPause(project: ProjectLike, year: number, month: numb
   );
 }
 
+function isPastBillingEndDate(project: Pick<ProjectLike, "billingEndDate">, now = new Date()) {
+  if (!project.billingEndDate) return false;
+  const end = new Date(project.billingEndDate);
+  const endOfDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
+  return now.getTime() > endOfDay.getTime();
+}
+
+function completionFromDate(project: Pick<ProjectLike, "billingEndDate">, now = new Date()) {
+  return project.billingEndDate ? new Date(project.billingEndDate) : now;
+}
+
+export async function autoCompleteProjectIfBillingEnded(
+  projectId: string | mongoose.Types.ObjectId,
+  now = new Date()
+) {
+  const _id = asObjectId(projectId);
+  const project = await Project.findById(_id);
+  if (!project) throw new Error("Project not found");
+  if (project.status === "completed") return false;
+  if (!isPastBillingEndDate(project, now)) return false;
+
+  const lastPause = project.pausePeriods[project.pausePeriods.length - 1];
+  if (!lastPause || lastPause.to) {
+    project.pausePeriods.push({
+      from: completionFromDate(project, now),
+      to: null,
+    } as (typeof project.pausePeriods)[number]);
+  }
+
+  project.status = "completed";
+  await project.save();
+  return true;
+}
+
+export async function autoCompleteProjectsByBillingEndDate(now = new Date()) {
+  const projects = await Project.find({
+    status: { $in: ["active", "paused"] },
+    billingEndDate: { $ne: null },
+  });
+  const completedIds: string[] = [];
+
+  for (const project of projects) {
+    if (!isPastBillingEndDate(project, now)) continue;
+
+    const lastPause = project.pausePeriods[project.pausePeriods.length - 1];
+    if (!lastPause || lastPause.to) {
+      project.pausePeriods.push({
+        from: completionFromDate(project, now),
+        to: null,
+      } as (typeof project.pausePeriods)[number]);
+    }
+
+    project.status = "completed";
+    await project.save();
+    completedIds.push(String(project._id));
+  }
+
+  return completedIds;
+}
+
 export async function ensureProjectMonthsUpToCurrent(projectId: string | mongoose.Types.ObjectId) {
   const _id = asObjectId(projectId);
+  await autoCompleteProjectIfBillingEnded(_id);
   const project = await Project.findById(_id).lean();
   if (!project) throw new Error("Project not found");
+
+  // Completed projects should not generate new monthly rows.
+  if (project.status === "completed") {
+    return [];
+  }
+
   const monthlyFee = Number(project.monthlyFee || 0);
 
   // Support projects with no recurring charge: do not generate monthly bills.

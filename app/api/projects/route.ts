@@ -2,11 +2,12 @@ import { dbConnect } from "@/lib/db";
 import { withAdmin, ok, fail, parseJson } from "@/lib/http";
 import { Project, type ProjectStatus } from "@/models/Project";
 import { Client } from "@/models/Client";
-import { ensureProjectMonthsUpToCurrent } from "@/lib/billing";
+import { autoCompleteProjectsByBillingEndDate, ensureProjectMonthsUpToCurrent } from "@/lib/billing";
 import { toPlain } from "@/lib/serialize";
 
 export const GET = withAdmin(async (req) => {
   await dbConnect();
+  await autoCompleteProjectsByBillingEndDate();
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const isProjectStatus = (value: string): value is ProjectStatus =>
@@ -30,6 +31,19 @@ export const POST = withAdmin(async (req) => {
   const clientExists = await Client.exists({ _id: body.clientId });
   if (!clientExists) return fail("Client not found", 404);
 
+  const status: ProjectStatus =
+    body.status === "active" || body.status === "paused" || body.status === "completed"
+      ? body.status
+      : "active";
+  const pausePeriods = Array.isArray(body.pausePeriods)
+    ? body.pausePeriods.map((p: { from: string; to?: string | null }) => ({
+        from: new Date(p.from),
+        to: p.to ? new Date(p.to) : null,
+      }))
+    : status === "active"
+      ? []
+      : [{ from: new Date(), to: null }];
+
   const project = await Project.create({
     clientId: body.clientId,
     name: String(body.name).trim(),
@@ -37,14 +51,9 @@ export const POST = withAdmin(async (req) => {
     oneTimeFee: Number(body.oneTimeFee || 0),
     billingStartDate: new Date(body.billingStartDate),
     billingEndDate: body.billingEndDate ? new Date(body.billingEndDate) : null,
-    status: body.status || "active",
+    status,
     notes: String(body.notes || ""),
-    pausePeriods: Array.isArray(body.pausePeriods)
-      ? body.pausePeriods.map((p: { from: string; to?: string | null }) => ({
-          from: new Date(p.from),
-          to: p.to ? new Date(p.to) : null,
-        }))
-      : [],
+    pausePeriods,
   });
 
   await ensureProjectMonthsUpToCurrent(project._id);
