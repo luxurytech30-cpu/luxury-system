@@ -44,6 +44,7 @@ export const GET = withAdmin(async (req) => {
 
   const [
     projects,
+    completedProjectRows,
     monthlyRows,
     paidMonthRows,
     oneTimeCollectedRows,
@@ -60,6 +61,7 @@ export const GET = withAdmin(async (req) => {
   ] =
     await Promise.all([
     Project.find({}).lean(),
+    Project.find({ status: "completed" }).populate("clientId", "name").sort({ updatedAt: -1, createdAt: -1 }).lean(),
     ProjectMonth.find({ status: "unpaid" }).lean(),
     ProjectMonth.aggregate<{ total: number }>([
       { $match: { status: "paid", paidAt: { $gte: monthStart, $lt: nextMonthStart } } },
@@ -132,6 +134,24 @@ export const GET = withAdmin(async (req) => {
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]),
   ]);
+
+  const completedProjects = completedProjectRows.map((project) => {
+    const populatedClient =
+      project.clientId && typeof project.clientId === "object" && "name" in project.clientId
+        ? (project.clientId as { _id?: unknown; name?: unknown })
+        : null;
+    return {
+      id: String(project._id),
+      name: project.name,
+      clientId: populatedClient?._id ? String(populatedClient._id) : String(project.clientId || ""),
+      clientName: typeof populatedClient?.name === "string" && populatedClient.name ? populatedClient.name : "Unknown client",
+      monthlyFee: Number(project.monthlyFee || 0),
+      oneTimeFee: Number(project.oneTimeFee || 0),
+      billingStartDate: project.billingStartDate,
+      billingEndDate: project.billingEndDate,
+      completedAt: project.updatedAt,
+    };
+  });
 
   const expectedThisMonth = projects
     .filter((p) => shouldBillProjectThisMonth(p, now))
@@ -236,6 +256,7 @@ export const GET = withAdmin(async (req) => {
         },
       },
       overdue,
+      completedProjects,
       trend,
     })
   );

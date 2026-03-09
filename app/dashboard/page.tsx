@@ -35,6 +35,17 @@ type DashboardResponse = {
     monthLabel: string;
     amount: number;
   }>;
+  completedProjects: Array<{
+    id: string;
+    name: string;
+    clientId: string;
+    clientName: string;
+    monthlyFee: number;
+    oneTimeFee: number;
+    billingStartDate: string;
+    billingEndDate: string | null;
+    completedAt: string;
+  }>;
   trend: Array<{
     year: number;
     month: number;
@@ -49,6 +60,8 @@ type DashboardResponse = {
 
 const money = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "ILS", maximumFractionDigits: 0 }).format(n || 0);
+
+const shortDate = (value: string | null | undefined) => (value ? String(value).slice(0, 10) : "-");
 
 function defaultPreviousMonthValue() {
   const d = new Date();
@@ -275,6 +288,56 @@ export default function DashboardPage() {
                           <tr>
                             <td colSpan={5} className="py-6 text-center text-slate-500">
                               No overdue bills.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+
+                <Card className="bg-linear-to-b from-white to-emerald-50/50">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Completed Projects</h2>
+                    <span className="rounded-full border border-emerald-200 bg-emerald-100/80 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                      {data?.completedProjects.length || 0} total
+                    </span>
+                  </div>
+                  <div className="max-h-104 overflow-auto rounded-2xl border border-slate-200/80 bg-white/80">
+                    <table className="min-w-full text-sm">
+                      <thead className="sticky top-0 bg-white/95 text-left text-slate-500 backdrop-blur">
+                        <tr>
+                          <th className="py-2 pr-4">Project</th>
+                          <th className="py-2 pr-4">Client</th>
+                          <th className="py-2 pr-4">Completed</th>
+                          <th className="py-2 pr-4">Billing</th>
+                          <th className="py-2 pr-4">Monthly</th>
+                          <th className="py-2 pr-4">One-time</th>
+                          <th className="py-2">Open</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data?.completedProjects || []).map((project) => (
+                          <tr key={project.id} className="border-t border-slate-100/90 hover:bg-emerald-50/40">
+                            <td className="py-2 pr-4">{project.name}</td>
+                            <td className="py-2 pr-4">{project.clientName}</td>
+                            <td className="py-2 pr-4">{shortDate(project.completedAt)}</td>
+                            <td className="py-2 pr-4">
+                              {shortDate(project.billingStartDate)} to {shortDate(project.billingEndDate)}
+                            </td>
+                            <td className="py-2 pr-4">{money(project.monthlyFee)}</td>
+                            <td className="py-2 pr-4">{money(project.oneTimeFee)}</td>
+                            <td className="py-2">
+                              <Link className="font-medium text-slate-900 underline decoration-slate-300" href={`/projects/${project.id}`}>
+                                View
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                        {!data?.completedProjects?.length && (
+                          <tr>
+                            <td colSpan={7} className="py-6 text-center text-slate-500">
+                              No completed projects yet.
                             </td>
                           </tr>
                         )}
